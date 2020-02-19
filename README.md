@@ -1,30 +1,39 @@
 # Snowflake Rules Based Grant Management
+
 Simplifies the management of Snowflake grants, enables strict control and stops privileges falling into the wrong hands.
 
 Allows security permissions in [Snowflake](https://www.snowflake.net) to be managed via rules that support wildcards and apply across all databases.
 
 ## UPDATE FEB 2019
+
 A breaking change was made, switching from a single role per privilege definition, to a list of roles.
 For existing users, rename all references to "Role" to "Roles", like so:
-```
+
+```json
 "Role":"PUBLIC"
 ```
+
 becomes
-```
+
+```json
 "Roles":["PUBLIC"]
 ```
 
 ## How it works
+
 ### Default Snowflake behaviour
-Snowflake provides the ability to grant collections of users (known as roles) privileges on either 
+
+Snowflake provides the ability to grant collections of users (known as roles) privileges on either
 specific objects, or all objects of a specific type, e.g.
+
 * grant select on all tables in schema mydb.myschema to role analyst;
 * grant select,insert,update,delete on table customer to role developer;
 
 Nested roles are supported, which allows a hierarchy to be created.
 
 ### What this script provides in addition
-This script provides a slightly different approach. Rather than using nested hierarchies to reduce 
+
+This script provides a slightly different approach. Rather than using nested hierarchies to reduce
 the number of GRANTs required, a rule file is provided which supports wildcards.
 
 This means a very terse and readable configuration file can generate a very large number of GRANTs.
@@ -32,24 +41,27 @@ This means a very terse and readable configuration file can generate a very larg
 Because it's a structured file, it can reside in version control and can be subject to change management
 enforcement (e.g. pull requests with mandatory reviews).
 
-By default, the script will also remove any privileges not specified by the file, so any direct adding of 
+By default, the script will also remove any privileges not specified by the file, so any direct adding of
 privileges into the database are revoked at each run.
 
 ### Restrictions
 
 Currently, the following [GRANT clauses](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html) are supported:
-- accountObjectPrivileges, but only for databases and warehouse (resource monitors are left alone)
-- schemaPrivileges
-- schemaObjectPrivileges, but only for tables and views (stages, file formats, UDFs and sequences are left alone).
 
+* accountObjectPrivileges, but only for databases and warehouse (resource monitors are left alone)
+* schemaPrivileges
+* schemaObjectPrivileges, but only for tables and views (stages, file formats, UDFs and sequences are left alone).
 
 ## Execution
+
 With python 3 installed, the script can be ran like so:
-```
+
+```bash
 pip install --upgrade snowflake-connector-python
-python apply_permissions.py -a $SNOWFLAKE_ACCOUNT -u $SNOWFLAKE_USER -r $SNOWFLAKE_ROLE -w $SNOWFLAKE_WAREHOUSE --snowflake-region $SNOWFLAKE_REGION 
+python apply_permissions.py -a $SNOWFLAKE_ACCOUNT -u $SNOWFLAKE_USER -r $SNOWFLAKE_ROLE -w $SNOWFLAKE_WAREHOUSE --snowflake-region $SNOWFLAKE_REGION
 ```
-it is expected that the environment variable SNOWSQL_PWD be set prior to calling the script, you should make this available to your build agent in some secure fashion.
+
+It is expected that the environment variable `SNOWSQL_PWD` be set prior to calling the script, you should make this available to your build agent in some secure fashion.
 
 You'll need to map between the branch name and the target environment name, e.g. master->prod
 
@@ -57,7 +69,8 @@ The user account will need the ability to manage grants. You can either use the 
 ```GRANT MANAGE GRANTS ON ACCOUNT TO ROLE "DEPLOYER";```
 
 Or if you prefer docker, set the environment variables and run like so:
-```
+
+```bash
 docker run -it --rm \
   -v "$PWD":/usr/src/applypermissions \
   -w /usr/src/applypermissions \
@@ -73,15 +86,18 @@ docker run -it --rm \
 ```
 
 ### File specification
+
 See below example.
 
 Each accountObjectPrivileges item contains:
+
 * **Purpose**: A plain english description of the rule
 * **Role**: The name of the Snowflake role to grant permission to (specify exactly)
 * Either **Databases** OR **Warehouses** : Matches the databases/warehouses to apply to. Format is [unix filename pattern](https://docs.python.org/2/library/fnmatch.html).
 * **Privileges**: The [accountObjectPrivileges](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html) to grant. (Must be possible or script will error)
 
 Each schemaPrivileges item contains:
+
 * **Purpose**: A plain english description of the rule
 * **Role**: The name of the Snowflake role to grant permission to (specify exactly)
 * **Databases**: Matches the databases to apply to. Format is [unix filename pattern](https://docs.python.org/2/library/fnmatch.html).
@@ -89,6 +105,7 @@ Each schemaPrivileges item contains:
 * **Privileges**: The [schemaPrivileges](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html) to grant. (Must be possible or script will error)
 
 Each schemaObjectPrivileges item contains:
+
 * **Purpose**: A plain english description of the rule
 * **Role**: The name of the Snowflake role to grant permission to (specify exactly)
 * **Databases**: Matches the databases to apply to. Format is [unix filename pattern](https://docs.python.org/2/library/fnmatch.html).
@@ -99,9 +116,9 @@ Each schemaObjectPrivileges item contains:
 * **FutureViews**: Set to true to apply these privileges to the specified roles all future views in databases and schemas currently matching the pattern
 * **Privileges**: The [schemaObjectPrivileges](https://docs.snowflake.net/manuals/sql-reference/sql/grant-privilege.html) to grant. (Must be possible or it is ignored, e.g. UPDATE applied to a view)
 
-
 #### Example file
-```
+
+```json
 {
     "accountObjectPrivileges": [
         {

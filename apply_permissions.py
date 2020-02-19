@@ -313,9 +313,9 @@ def fetch_roles(snowflake_database, snowflake_schema, verbose):
 def generate_existing_table_and_view_privileges_sql(snowflake_database, snowflake_role, verbose):
     query = """SELECT 'GRANT '||PRIVILEGE_TYPE||' ON '||REPLACE (tab.TABLE_TYPE,'BASE ','')||' \"'||OBJECT_CATALOG||'\".\"'||OBJECT_SCHEMA||'\".\"'||OBJECT_NAME||'\" TO ROLE \"'||GRANTEE||'\"' AS Privileges
     FROM {0}.INFORMATION_SCHEMA.OBJECT_PRIVILEGES priv
-    JOIN {0}.INFORMATION_SCHEMA.TABLES tab 
-        ON priv.OBJECT_CATALOG=tab.TABLE_CATALOG 
-        and priv.OBJECT_SCHEMA=tab.TABLE_SCHEMA 
+    JOIN {0}.INFORMATION_SCHEMA.TABLES tab
+        ON priv.OBJECT_CATALOG=tab.TABLE_CATALOG
+        and priv.OBJECT_SCHEMA=tab.TABLE_SCHEMA
         and priv.OBJECT_NAME=tab.TABLE_NAME
     WHERE OBJECT_TYPE = 'TABLE'
     AND TABLE_OWNER = '{1}'
