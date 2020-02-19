@@ -61,6 +61,13 @@ pip install --upgrade snowflake-connector-python
 python apply_permissions.py -a $SNOWFLAKE_ACCOUNT -u $SNOWFLAKE_USER -r $SNOWFLAKE_ROLE -w $SNOWFLAKE_WAREHOUSE --snowflake-region $SNOWFLAKE_REGION
 ```
 
+Or if using pipenv:
+
+```bash
+pipenv sync
+pipenv run python apply_permissions.py -a $SNOWFLAKE_ACCOUNT -u $SNOWFLAKE_USER -r $SNOWFLAKE_ROLE -w $SNOWFLAKE_WAREHOUSE --snowflake-region $SNOWFLAKE_REGION
+```
+
 It is expected that the environment variable `SNOWSQL_PWD` be set prior to calling the script, you should make this available to your build agent in some secure fashion.
 
 You'll need to map between the branch name and the target environment name, e.g. master->prod
