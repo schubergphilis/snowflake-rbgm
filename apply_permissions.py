@@ -401,7 +401,7 @@ def all_possible_table_and_view_privileges_clause():
     return (" union ".join(["select '{0}' as name".format(privileges) for privileges in all_possible_table_and_view_privileges()]))
 
 def all_possible_schema_privileges():
-    return ['MODIFY', 'MONITOR', 'USAGE', 'CREATE TABLE', 'CREATE TASK','CREATE EXTERNAL TABLE', 'CREATE VIEW', 'CREATE FILE FORMAT', 'CREATE STAGE', 'CREATE PIPE', 'CREATE SEQUENCE', 'CREATE FUNCTION']
+    return ['CREATE EXTERNAL TABLE', 'CREATE FILE FORMAT', 'CREATE FUNCTION', 'CREATE MATERIALIZED VIEW', 'CREATE PIPE', 'CREATE PROCEDURE', 'CREATE SEQUENCE', 'CREATE STAGE', 'CREATE STREAM', 'CREATE TABLE', 'CREATE TASK', 'CREATE VIEW', 'MODIFY', 'MONITOR', 'USAGE']
 
 def all_possible_schema_privileges_clause():
     return (" union ".join(["select '{0}' as name".format(privileges) for privileges in all_possible_schema_privileges()]))
