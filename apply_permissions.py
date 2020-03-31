@@ -7,7 +7,8 @@ import snowflake.connector
 
 
 def apply_permissions(snowflake_account, snowflake_user, snowflake_role, snowflake_warehouse, snowflake_region,
-                      permissions_file, grant_statements_file, revoke_statements_file, verbose):
+                      permissions_file, skipped_databases, grant_statements_file, revoke_statements_file, verbose):
+
     if os.environ["SNOWSQL_PWD"] is None:
         raise ValueError("The SNOWSQL_PWD environment variable has not been defined")
     os.environ["SNOWFLAKE_ACCOUNT"] = snowflake_account
@@ -17,7 +18,7 @@ def apply_permissions(snowflake_account, snowflake_user, snowflake_role, snowfla
     os.environ["SNOWFLAKE_REGION"] = snowflake_region
     os.environ["SNOWFLAKE_AUTHENTICATOR"] = 'snowflake'
 
-    all_databases = fetch_databases(verbose)
+    all_databases = fetch_databases(verbose, skipped_databases)
     all_schemas = fetch_schemas(all_databases, verbose)
 
     print("databases found: {0}".format(all_databases))
@@ -269,14 +270,14 @@ def execute_snowflake_query(snowflake_database, snowflake_schema, query, verbose
         con.close()
 
 
-def fetch_databases(verbose):
+def fetch_databases(verbose, skipped_databases):
     query = "SHOW DATABASES"
     results = execute_snowflake_query('UTIL_DB', None, query, verbose)
     databases = []
     for cursor in results:
         for row in cursor:
-            # Exclude any shared databases and UTIL_DB
-            if row[4] == '' and row[1] != 'UTIL_DB':
+            # Exclude any shared databases, UTIL_DB and other databases specified by user
+            if row[4] == '' and managed_database(row[1], skipped_databases):
                 databases.append(row[1])
     return databases
 
@@ -509,6 +510,13 @@ def generate_grant_schema_privileges_sql(database_name, grantee_role, schemas, p
     return grant_privileges_sql
 
 
+def managed_database(database_name, skipped_databases):
+    for matcher in skipped_databases:
+        if fnmatch.fnmatch(database_name, matcher):
+            return False
+    return True
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Apply a set of permission rules to a Snowflake account")
     parser.add_argument('-a', '--snowflake-account', type=str, help='The name of the environment (e.g. dev,test,prod)',
@@ -523,6 +531,8 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument('-p', '--permissions-file', default="Permissions.json", type=str,
                         help='The file containing the permission definitions')
+    parser.add_argument('-s', '--skip-database', default=['UTIL_DB'], type=str, action='append',
+                        help='Database to skip')
     parser.add_argument('-g', '--grant-statements-file', default=None, type=str,
                         help='The name of a file to output the GRANT statements to, instead of applying them automatically')
     parser.add_argument('-e', '--revoke-statements-file', default=None, type=str,
@@ -532,4 +542,4 @@ if __name__ == '__main__':
 
 
 apply_permissions(args.snowflake_account, args.snowflake_user, args.snowflake_role, args.snowflake_warehouse,
-                  args.snowflake_region, args.permissions_file, args.grant_statements_file, args.revoke_statements_file, args.verbose)
+                  args.snowflake_region, args.permissions_file, args.skip_database, args.grant_statements_file, args.revoke_statements_file, args.verbose)
